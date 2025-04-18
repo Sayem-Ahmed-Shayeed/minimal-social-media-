@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,27 +31,31 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void login() async {
-    // show a loading spinner if the provess is started
-    showCircularProgessIndicator(context);
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    showCircularProgessIndicator(context); // safe before await
 
-    //extract the email and password
-    String email = ref.read(EmailNotifierProvider);
-    String password = ref.read(PasswordProviderNotifierProvider);
+    final email = ref.watch(EmailNotifierProvider);
+    final password = ref.watch(PasswordProviderNotifierProvider);
+
     try {
-      await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: email, password: password);
-      //stop the circular loading spinner
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      navigator.pop(); // use saved navigator
     } on FirebaseAuthException catch (e) {
-      //stop the circular loading spinner
-      Navigator.pop(context);
-      showSnackBar(context, e.code.toString());
+      navigator.pop();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Login failed')),
+      );
     }
   }
 
   void signUp() async {
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     //first of all show a circular progess indicator
     showCircularProgessIndicator(context);
     //try to create a user if the confirmPw and pass are smae
@@ -59,19 +64,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       String email = ref.read(EmailNotifierProvider);
       String password = ref.read(PasswordProviderNotifierProvider);
       try {
-        await FirebaseAuth.instance
+        FirebaseAuth.instance
             .createUserWithEmailAndPassword(email: email, password: password);
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+        //store the usersList in the firestore database.
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(
+              ref.read(EmailNotifierProvider),
+            )
+            .set({
+          'userName': ref.read(nameNotifierProvider),
+          'email': ref.read(EmailNotifierProvider),
+          'createdAt': DateTime.now(),
+        });
 
         //if we success to create then we just stop the loading spinner
-        if (context.mounted) {
-          Navigator.pop(context);
-        }
+
+        //catch any exceptions if found
       } on FirebaseAuthException catch (e) {
         //pop the circular progess indicator
-        if (context.mounted) {
-          Navigator.pop(context);
-        }
-        showSnackBar(context, e.code.toString());
+        navigator.pop();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(e.message ?? 'SignUp failed')),
+        );
       }
     } else {
       Navigator.pop(context);
@@ -172,7 +190,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         color: Theme.of(context)
                             .colorScheme
                             .inversePrimary
-                            .withOpacity(.5),
+                            .withValues(alpha: 0.5),
                       ),
                     ),
                     const SizedBox(

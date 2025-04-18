@@ -63,6 +63,7 @@ class MyDrawer extends StatelessWidget {
                             .watch(
                                 LightDarkModeProviderNotifierProvider.notifier)
                             .toggleMode();
+                        Navigator.pop(context);
                       },
                       child: ListTile(
                         leading: Consumer(

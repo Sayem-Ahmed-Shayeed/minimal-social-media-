@@ -22,7 +22,6 @@ class MyTextField extends StatefulWidget {
 class _MyTextFieldState extends State<MyTextField> {
   @override
   Widget build(BuildContext context) {
-    bool isHidden = true;
     return Consumer(
       builder: (context, ref, child) {
         return TextField(
@@ -46,14 +45,17 @@ class _MyTextFieldState extends State<MyTextField> {
           },
           decoration: InputDecoration(
             filled: true,
-            fillColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            fillColor:
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             hintText: widget.hintText,
             hintStyle: TextStyle(
-              color:
-                  Theme.of(context).colorScheme.inversePrimary.withOpacity(0.5),
+              color: Theme.of(context)
+                  .colorScheme
+                  .inversePrimary
+                  .withValues(alpha: 0.5),
             ),
           ),
         );
